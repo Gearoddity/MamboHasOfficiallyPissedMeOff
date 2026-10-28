@@ -27,11 +27,11 @@ class SimpleListener:
         try:
             # sounddevice uses a generator/callback or a block-reading input stream context manager.
             # sd.RawInputStream acts as a direct drop-in replacement for PyAudio's stream reading.
-            with sd.RawInputStream(samplerate=16000, blocksize=8000, dtype='int16',
+            with sd.RawInputStream(samplerate=16000, blocksize=1600, dtype='int16',
                                    channels=1) as self.stream:
                 while self.is_running:
                     # stream.read returns (data_bytes, overflow_flag)
-                    data, overflow = self.stream.read(4000)
+                    data, overflow = self.stream.read(1600)
                     data = bytes(data)
                     if self.recognizer.AcceptWaveform(data):
                         result = json.loads(self.recognizer.Result())
