@@ -9,8 +9,9 @@ from Graphics_processing import MamboScreens
 
 
 def main():
-    wake_word = wake()
+
     mambo = MamboScreens()
+    wake_word = wake()
     command_queue = queue.Queue()
 
     def handle_spoken_text(text):
@@ -21,7 +22,7 @@ def main():
             wake_word.active_timer()
             command_queue.put("Home")
 
-        elif "weather" in text or "whether" in text:
+        if "weather" in text or "whether" in text:
             if wake_word.check_active():
                 wake_word.force_stop()
                 command_queue.put("Weather")

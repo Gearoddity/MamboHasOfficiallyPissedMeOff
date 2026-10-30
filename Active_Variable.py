@@ -1,7 +1,7 @@
 import tkinter as tk
 import time
 import threading
-
+import tkinter
 
 class wake:
     def __init__(self):
