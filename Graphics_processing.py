@@ -26,24 +26,22 @@ class MamboScreens(tk.Tk):
         self.minsize(640, 400)
         self.configure(bg=BG)
 
-        # 1. Main container with theme background to stack all screens
+        # Main container with theme background to stack all screens
         container = tk.Frame(self, bg=BG)
         container.pack(fill="both", expand=True)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
-        # Dictionary to hold references to all screen frames
         self.frames = {}
         self.active_screen = None
         self.pill_day = datetime.now().strftime('%A')
-
-        # Track wake indicators across all screen headers
         self.wake_indicators = []
 
-        # 2. Define screen names matching main.py commands
+        # Track active auto-return timer ID
+        self.idle_timer_id = None
+
         screen_names = ["Home", "Weather", "Pills", "News", "Schedule", "Number5"]
 
-        # 3. Create, grid, and build each screen dynamically
         for name in screen_names:
             frame = tk.Frame(container, bg=BG)
             self.frames[name] = frame
@@ -52,7 +50,6 @@ class MamboScreens(tk.Tk):
             build_method = getattr(self, f"build_{name.lower()}")
             build_method(frame)
 
-        # 4. Show starting screen & start clock ticker
         self.show_screen("Home")
         self.update_clock()
 
@@ -102,13 +99,15 @@ class MamboScreens(tk.Tk):
             if screen_name == "Weather":
                 threading.Thread(target=self.refresh_weather, daemon=True).start()
             elif screen_name == "Pills":
-                # Automatically update to today's day every time the pills screen is opened
                 self.pill_day = datetime.now().strftime('%A')
                 self.refresh_pills()
             elif screen_name == "News":
                 threading.Thread(target=self.refresh_news, daemon=True).start()
             elif screen_name == "Schedule":
                 threading.Thread(target=self.refresh_schedule, daemon=True).start()
+
+            # Reset or start the 2-minute auto-return timer
+            self._reset_idle_timer()
 
     def get_current_screen(self):
         """Returns the string name of the screen currently in front"""
@@ -127,6 +126,21 @@ class MamboScreens(tk.Tk):
             self.idle_date.config(text=datetime.now().strftime('%A, %B %d, %Y'))
 
         self.after(1000, self.update_clock)
+
+    def _reset_idle_timer(self):
+        """Cancels existing idle timer and starts a 2-minute countdown if off Home."""
+        # Cancel previous scheduled timer if active
+        if self.idle_timer_id is not None:
+            self.after_cancel(self.idle_timer_id)
+            self.idle_timer_id = None
+
+        # If on any screen other than Home, start 120,000ms (2 minutes) timer
+        if self.active_screen != "Home":
+            self.idle_timer_id = self.after(120000, self._return_to_home)
+
+    def _return_to_home(self):
+        """Switches back to Home screen after timer expires."""
+        self.show_screen("Home")
 
     # --- Screen Setup & Data Integration Functions ---
     def build_home(self, frame):
