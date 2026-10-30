@@ -53,13 +53,14 @@ def main():
     )
 
     def process_commands():
+        # Update the UI on-screen listening indicator based on the wake variable
+        mambo.set_wake_status(wake_word.check_active())
+
         try:
             while True:
                 screen = command_queue.get_nowait()
-
                 if mambo.get_current_screen() != screen:
                     mambo.show_screen(screen)
-
         except queue.Empty:
             pass
 
