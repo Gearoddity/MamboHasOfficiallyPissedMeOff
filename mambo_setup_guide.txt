@@ -1,146 +1,82 @@
-================================================================================
-                    MAMBO SMART ASSISTANT SETUP GUIDE
-          Cross-Platform Setup: Raspberry Pi 5, macOS, and Windows
-================================================================================
+====================================================================
+MAMBO SMART ASSISTANT - DEPLOYMENT & SETUP GUIDE
+====================================================================
 
-TABLE OF CONTENTS:
-  1. System Requirements & Overview
-  2. Raspberry Pi 5 (Raspberry Pi OS) Installation & Execution
-  3. macOS Installation & Execution
-  4. Windows 10/11 Installation & Execution
-  5. Troubleshooting & Hardware Audio Setup
+PROJECT STRUCTURE:
+------------------
+MamboHasOfficiallyPissedMeOff/
+├── main.py
+├── Graphics_processing.py
+├── weather_manager.py
+├── medication_manager.py
+├── calendar_manager.py
+├── news_manager.py
+├── model/                 <-- Vosk acoustic model (included in repo)
+└── Audio/
+    └── Number5.mp3        <-- Theme audio file
 
-================================================================================
-1. SYSTEM REQUIREMENTS & OVERVIEW
-================================================================================
-Mambo relies on Python 3.9+, Tkinter, PyAudio/SoundDevice, Vosk (speech-to-text),
-and standard library network utilities for live weather and news feeds.
 
-Required Python Packages:
-  - vosk
-  - sounddevice
-  - pyaudio
-  - numpy
+====================================================================
+1. RASPBERRY PI 5 (PRODUCTION SETUP)
+====================================================================
 
-================================================================================
-2. RASPBERRY PI 5 (RASPBERRY PI OS 64-BIT) SETUP
-================================================================================
+1. Update system and install the lightweight MP3 audio player (mpg123):
+   sudo apt update
+   sudo apt install mpg123 -y
 
-STEP 1: Update System & Install Native Dependencies
---------------------------------------------------
-Open your terminal and execute:
-  sudo apt update && sudo apt upgrade -y
-  sudo apt install -y python3-pip python3-tk python3-dev portaudio19-dev libasound2-dev git
+2. Verify Python 3 and Tkinter are installed (usually standard on Raspberry Pi OS):
+   sudo apt install python3-tk -y
 
-STEP 2: Clone/Download Your Project
-----------------------------------
-Navigate to your preferred directory and enter:
-  cd ~
-  mkdir -p MamboAssistant
-  cd MamboAssistant
-  # Copy your python project files (main.py, Graphics_processing.py, etc.) here.
+3. Navigate to the project directory:
+   cd /path/to/MamboHasOfficiallyPissedMeOff
 
-STEP 3: Set Up a Python Virtual Environment
-------------------------------------------
-On Raspberry Pi OS (Bookworm), managed environments require a virtual environment:
-  python3 -m venv venv
-  source venv/bin/activate
+4. (Optional) Create and activate a virtual environment:
+   python3 -m venv venv
+   source venv/bin/activate
 
-STEP 4: Install Python Packages
-------------------------------
-  pip install --upgrade pip
-  pip install vosk sounddevice pyaudio numpy
+5. Install required Python packages (Vosk for local voice recognition, requests, etc.):
+   pip install --upgrade pip
+   pip install vosk requests
+   # Note: No pygame or playsound required anymore!
 
-STEP 5: Download Vosk Acoustic Model
------------------------------------
-Download and unpack the small English model into your project directory:
-  wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
-  unzip vosk-model-small-en-us-0.15.zip
-  mv vosk-model-small-en-us-0.15 model
+6. Run the assistant:
+   python3 main.py
 
-STEP 6: Run Mambo
-----------------
-Ensure your virtual environment is active (`source venv/bin/activate`) and run:
-  python3 main.py
 
-================================================================================
-3. MACOS SETUP
-================================================================================
+====================================================================
+2. macOS (DEVELOPMENT & TESTING)
+====================================================================
 
-STEP 1: Install Homebrew and PortAudio
---------------------------------------
-Open Terminal and install Homebrew if you don't already have it, then install PortAudio and Python Tkinter:
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  brew install portaudio python-tk
+1. Ensure Python 3 and Tkinter are installed (via Homebrew if needed):
+   brew install python-tk
 
-STEP 2: Create Virtual Environment
-----------------------------------
-Navigate to your project directory in Terminal:
-  cd path/to/MamboAssistant
-  python3 -m venv venv
-  source venv/bin/activate
+2. Clone/navigate to the project repository.
 
-STEP 3: Install Required Packages
---------------------------------
-  pip install --upgrade pip
-  pip install vosk sounddevice pyaudio numpy
+3. Set up a virtual environment:
+   python3 -m venv venv
+   source venv/bin/activate
 
-STEP 4: Download Vosk Model
----------------------------
-Download the English speech model and rename the folder to `model`:
-  curl -O https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
-  unzip vosk-model-small-en-us-0.15.zip
-  mv vosk-model-small-en-us-0.15 model
-  rm vosk-model-small-en-us-0.15.zip
+4. Install dependencies:
+   pip install vosk requests
 
-STEP 5: Run Mambo
-----------------
-Ensure Microphone access permissions are granted to Terminal/VSCode when prompted.
-  python3 main.py
+5. Run the assistant:
+   python3 main.py
+   *(Note: macOS uses the built-in `afplay` utility for audio playback automatically).*
 
-================================================================================
-4. WINDOWS 10 / 11 SETUP
-================================================================================
 
-STEP 1: Install Python
-----------------------
-1. Download Python 3.10 or 3.11 from https://www.python.org/
-2. CRITICAL: Check the box "Add python.exe to PATH" during installation.
+====================================================================
+3. WINDOWS (DEVELOPMENT & TESTING)
+====================================================================
 
-STEP 2: Set Up Virtual Environment via Command Prompt (CMD) or PowerShell
------------------------------------------------------------------------
-Open Command Prompt and navigate to your project directory:
-  cd C:\Users\YourUsername\Documents\MamboAssistant
-  python -m venv venv
-  venv\Scripts\activate
+1. Open PowerShell or Command Prompt in the project folder.
 
-STEP 3: Install Required Packages
---------------------------------
-  pip install --upgrade pip
-  pip install vosk sounddevice pyaudio numpy
+2. Create and activate a virtual environment:
+   python -m venv venv
+   venv\Scripts\activate
 
-STEP 4: Add Vosk Speech Model
------------------------------
-1. Download https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
-2. Extract the zip file inside your `MamboAssistant` directory.
-3. Rename the extracted folder `vosk-model-small-en-us-0.15` to simply `model`.
+3. Install dependencies:
+   pip install vosk requests
 
-STEP 5: Run Mambo
-----------------
-  python main.py
-
-================================================================================
-5. TROUBLESHOOTING & COMMON ISSUES
-================================================================================
-
-1. Microphone Not Found / SoundDevice Error:
-   - On Pi 5: Run `arecord -l` to ensure your USB/Hat microphone is listed.
-   - Specify device index in sounddevice/pyaudio stream setup if needed.
-
-2. Vosk Model Missing Error:
-   - Ensure the extracted folder is in the same directory as `main.py` and strictly named `model`.
-
-3. Tkinter Module NotFound Error:
-   - Linux: `sudo apt install python3-tk`
-   - macOS: `brew install python-tk`
-================================================================================
+4. Run the assistant:
+   python main.py
+   *(Note: Windows uses built-in .NET PresentationCore MediaPlayer for audio).*

@@ -46,6 +46,10 @@ def main():
             if wake_word.check_active():
                 wake_word.force_stop()
                 command_queue.put("Number5")
+        elif "stop" in text or "pause" in text:
+            if wake_word.check_active():
+                mambo.stop_mambo_audio()
+                mambo.show_screen("Home")
 
     listener = SimpleListener(
         model_path="model",

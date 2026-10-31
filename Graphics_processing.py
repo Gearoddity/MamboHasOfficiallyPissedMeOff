@@ -2,7 +2,9 @@ import tkinter as tk
 from datetime import datetime
 import time
 import threading
-
+import subprocess
+import platform
+import os
 # Import external utility managers
 from weather_manager import get_weather
 from medication_manager import get_medications, DAYS as PULL_DAYS
@@ -52,7 +54,8 @@ class MamboScreens(tk.Tk):
 
         self.show_screen("Home")
         self.update_clock()
-
+        # Track active audio process for stopping
+        self.audio_process = None
     # --- UI Helper Methods ---
     def _text(self, parent, value, size=18, color=WHITE, bold=False, **kwargs):
         return tk.Label(parent, text=value, bg=kwargs.pop('bg', BG), fg=color,
@@ -95,7 +98,6 @@ class MamboScreens(tk.Tk):
             frame.tkraise()
             self.active_screen = screen_name
 
-            # Dynamic data refreshing on view change (run network calls threaded)
             if screen_name == "Weather":
                 threading.Thread(target=self.refresh_weather, daemon=True).start()
             elif screen_name == "Pills":
@@ -105,8 +107,10 @@ class MamboScreens(tk.Tk):
                 threading.Thread(target=self.refresh_news, daemon=True).start()
             elif screen_name == "Schedule":
                 threading.Thread(target=self.refresh_schedule, daemon=True).start()
+            elif screen_name == "Number5":
+                # Trigger audio playback in a background thread
+                threading.Thread(target=self.play_mambo_audio, daemon=True).start()
 
-            # Reset or start the 2-minute auto-return timer
             self._reset_idle_timer()
 
     def get_current_screen(self):
@@ -251,6 +255,47 @@ class MamboScreens(tk.Tk):
         if hasattr(self, 'news_label') and self.news_label.winfo_exists():
             self.news_label.config(text=text)
 
+    def play_mambo_audio(self):
+        """Plays the Mambo No 5 audio file using native OS media players (zero dependencies)."""
+        audio_path = os.path.join(os.path.dirname(__file__), "Audio", "Number5.mp3")
+
+        if not os.path.exists(audio_path):
+            print(f"[AUDIO] File not found at: {audio_path}")
+            return
+
+        # Stop any currently playing audio first
+        self.stop_mambo_audio()
+
+        try:
+            system_name = platform.system()
+            print(f"[AUDIO] Playing on {system_name}: {audio_path}")
+
+            if system_name == "Darwin":  # macOS
+                self.audio_process = subprocess.Popen(["afplay", audio_path])
+            elif system_name == "Windows":  # Windows (.NET PresentationCore MediaPlayer)
+                ps_command = (
+                    "Add-Type -AssemblyName PresentationCore; "
+                    f"$mp = New-Object System.Windows.Media.MediaPlayer; "
+                    f"$mp.Open('{audio_path}'); "
+                    "$mp.Play(); "
+                    "Start-Sleep -s 35"
+                )
+                self.audio_process = subprocess.Popen(["powershell", "-NoProfile", "-Command", ps_command])
+            else:  # Linux / Raspberry Pi 5
+                self.audio_process = subprocess.Popen(["mpg123", audio_path])
+
+        except Exception as e:
+            print(f"[AUDIO] Error playing sound: {e}")
+    def stop_mambo_audio(self):
+        """Stops the native audio process immediately when requested via voice."""
+        if self.audio_process and self.audio_process.poll() is None:
+            print("[AUDIO] Stopping music playback.")
+            try:
+                self.audio_process.terminate()
+                self.audio_process.wait(timeout=1)
+            except Exception:
+                self.audio_process.kill()
+            self.audio_process = None
 
 if __name__ == "__main__":
     app = MamboScreens()
