@@ -164,9 +164,35 @@ class MamboScreens(tk.Tk):
     def refresh_weather(self):
         try:
             data = get_weather()
-            text = (f"Temperature: {data.get('temperature')}°F\n"
-                    f"Condition: {data.get('condition')}\n"
-                    f"Humidity: {data.get('humidity')}%")
+            condition_str = data.get('condition', '').lower()
+
+            # Dictionary mapping condition keywords to visual emojis
+            weather_icons = {
+                "sunny": "☀️",
+                "clear": "☀️",
+                "partly cloudy": "⛅",
+                "cloudy": "☁️",
+                "rain": "🌧️",
+                "rainy": "🌧️",
+                "thunderstorm": "⚡",
+                "snow": "❄️",
+                "fog": "🌫️",
+                "windy": "🌬️"
+            }
+
+            # Match condition string to dictionary, defaulting to a standard icon if unmatched
+            icon = "🌤️"
+            for key, emoji in weather_icons.items():
+                if key in condition_str:
+                    icon = emoji
+                    break
+
+            # Construct structured text including the mapped emoji
+            text = (
+                f"Condition: {data.get('condition')} {icon}\n"
+                f"Temperature: {data.get('temperature')}°F\n"
+                f"Humidity: {data.get('humidity')}%\n\n"
+            )
         except Exception as e:
             text = f"Could not load weather: {e}"
 
