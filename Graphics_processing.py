@@ -254,66 +254,66 @@ class MamboScreens(tk.Tk):
 
     # --- WAV Audio Management Methods ---
         # --- WAV Audio Management Methods ---
-        def play_mambo_audio(self):
-            """Plays the Mambo No 5 audio file using native OS media players (.wav format)."""
-            audio_path = os.path.join(os.path.dirname(__file__), "Audio", "Number5.wav")
+    def play_mambo_audio(self):
+        """Plays the Mambo No 5 audio file using native OS media players (.wav format)."""
+        audio_path = os.path.join(os.path.dirname(__file__), "Audio", "Number5.wav")
 
-            if not os.path.exists(audio_path):
-                print(f"[AUDIO] File not found at: {audio_path}")
-                return
+        if not os.path.exists(audio_path):
+            print(f"[AUDIO] File not found at: {audio_path}")
+            return
 
-            # Stop any currently playing audio first
-            self.stop_mambo_audio()
+        # Stop any currently playing audio first
+        self.stop_mambo_audio()
 
+        try:
+            system_name = platform.system()
+            print(f"[AUDIO] Playing on {system_name}: {audio_path}")
+
+            if system_name == "Darwin":  # macOS
+                self.audio_process = subprocess.Popen(["afplay", audio_path])
+            elif system_name == "Windows":  # Windows native SoundPlayer (.wav) with PlaySync
+                safe_path = audio_path.replace("'", "''").replace("\\", "/")
+                ps_command = f"(New-Object System.Media.SoundPlayer '{safe_path}').PlaySync()"
+                self.audio_process = subprocess.Popen(["powershell", "-NoProfile", "-Command", ps_command])
+            else:  # Linux / Raspberry Pi 5 (ALSA aplay)
+                self.audio_process = subprocess.Popen(["aplay", audio_path])
+
+        except Exception as e:
+            print(f"[AUDIO] Error playing sound: {e}")
+
+    def stop_mambo_audio(self):
+        """Stops the native audio process immediately when requested via voice."""
+        if self.audio_process and self.audio_process.poll() is None:
+            print("[AUDIO] Stopping music playback.")
             try:
-                system_name = platform.system()
-                print(f"[AUDIO] Playing on {system_name}: {audio_path}")
+                self.audio_process.terminate()
+                self.audio_process.wait(timeout=1)
+            except Exception:
+                self.audio_process.kill()
+            self.audio_process = None
 
-                if system_name == "Darwin":  # macOS
-                    self.audio_process = subprocess.Popen(["afplay", audio_path])
-                elif system_name == "Windows":  # Windows native SoundPlayer (.wav) with PlaySync
-                    safe_path = audio_path.replace("'", "''").replace("\\", "/")
-                    ps_command = f"(New-Object System.Media.SoundPlayer '{safe_path}').PlaySync()"
-                    self.audio_process = subprocess.Popen(["powershell", "-NoProfile", "-Command", ps_command])
-                else:  # Linux / Raspberry Pi 5 (ALSA aplay)
-                    self.audio_process = subprocess.Popen(["aplay", audio_path])
+    def play_wake_audio(self):
+        """Plays the short wake chime (.wav format) instantly with zero latency."""
+        wake_audio_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Audio", "chime2.wav")
 
-            except Exception as e:
-                print(f"[AUDIO] Error playing sound: {e}")
+        if not os.path.exists(wake_audio_path):
+            print(f"[AUDIO] Chime file not found at: {wake_audio_path}")
+            return
 
-        def stop_mambo_audio(self):
-            """Stops the native audio process immediately when requested via voice."""
-            if self.audio_process and self.audio_process.poll() is None:
-                print("[AUDIO] Stopping music playback.")
-                try:
-                    self.audio_process.terminate()
-                    self.audio_process.wait(timeout=1)
-                except Exception:
-                    self.audio_process.kill()
-                self.audio_process = None
+        try:
+            system_name = platform.system()
 
-        def play_wake_audio(self):
-            """Plays the short wake chime (.wav format) instantly with zero latency."""
-            wake_audio_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Audio", "MamboChime.wav")
+            if system_name == "Darwin":  # macOS
+                subprocess.Popen(["afplay", wake_audio_path])
+            elif system_name == "Windows":  # Windows native SoundPlayer (.wav) with PlaySync
+                safe_path = wake_audio_path.replace("'", "''").replace("\\", "/")
+                ps_command = f"(New-Object System.Media.SoundPlayer '{safe_path}').PlaySync()"
+                subprocess.Popen(["powershell", "-NoProfile", "-Command", ps_command])
+            else:  # Linux / Raspberry Pi 5 (ALSA aplay)
+                subprocess.Popen(["aplay", wake_audio_path])
 
-            if not os.path.exists(wake_audio_path):
-                print(f"[AUDIO] Chime file not found at: {wake_audio_path}")
-                return
-
-            try:
-                system_name = platform.system()
-
-                if system_name == "Darwin":  # macOS
-                    subprocess.Popen(["afplay", wake_audio_path])
-                elif system_name == "Windows":  # Windows native SoundPlayer (.wav) with PlaySync
-                    safe_path = wake_audio_path.replace("'", "''").replace("\\", "/")
-                    ps_command = f"(New-Object System.Media.SoundPlayer '{safe_path}').PlaySync()"
-                    subprocess.Popen(["powershell", "-NoProfile", "-Command", ps_command])
-                else:  # Linux / Raspberry Pi 5 (ALSA aplay)
-                    subprocess.Popen(["aplay", wake_audio_path])
-
-            except Exception as e:
-                print(f"[AUDIO] Wake sound error: {e}")
+        except Exception as e:
+            print(f"[AUDIO] Wake sound error: {e}")
 if __name__ == "__main__":
     app = MamboScreens()
     app.mainloop()
