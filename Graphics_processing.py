@@ -56,6 +56,7 @@ class MamboScreens(tk.Tk):
         self.update_clock()
         # Track active audio process for stopping
         self.audio_process = None
+
     # --- UI Helper Methods ---
     def _text(self, parent, value, size=18, color=WHITE, bold=False, **kwargs):
         return tk.Label(parent, text=value, bg=kwargs.pop('bg', BG), fg=color,
@@ -133,12 +134,10 @@ class MamboScreens(tk.Tk):
 
     def _reset_idle_timer(self):
         """Cancels existing idle timer and starts a 2-minute countdown if off Home."""
-        # Cancel previous scheduled timer if active
         if self.idle_timer_id is not None:
             self.after_cancel(self.idle_timer_id)
             self.idle_timer_id = None
 
-        # If on any screen other than Home, start 120,000ms (2 minutes) timer
         if self.active_screen != "Home":
             self.idle_timer_id = self.after(120000, self._return_to_home)
 
@@ -203,8 +202,6 @@ class MamboScreens(tk.Tk):
 
     def build_pills(self, frame):
         body = self._create_header_and_body(frame, "MEDICATION SCHEDULE")
-
-        # Removed dropdown widget — display schedule directly for the current day
         self.pills_label = self._text(body, "Loading medication schedule...", 18, WHITE, bg=CARD, anchor='nw')
         self.pills_label.pack(fill='both', expand=True)
         self._text(body, "Demo data only — not medical instructions", 12, MUTED, bg=CARD).pack(anchor='w', pady=(10, 0))
@@ -255,51 +252,72 @@ class MamboScreens(tk.Tk):
         if hasattr(self, 'news_label') and self.news_label.winfo_exists():
             self.news_label.config(text=text)
 
-    def play_mambo_audio(self):
-        """Plays the Mambo No 5 audio file using native OS media players (zero dependencies)."""
-        audio_path = os.path.join(os.path.dirname(__file__), "Audio", "Number5.mp3")
+    # --- WAV Audio Management Methods ---
+        # --- WAV Audio Management Methods ---
+        def play_mambo_audio(self):
+            """Plays the Mambo No 5 audio file using native OS media players (.wav format)."""
+            audio_path = os.path.join(os.path.dirname(__file__), "Audio", "Number5.wav")
 
-        if not os.path.exists(audio_path):
-            print(f"[AUDIO] File not found at: {audio_path}")
-            return
+            if not os.path.exists(audio_path):
+                print(f"[AUDIO] File not found at: {audio_path}")
+                return
 
-        # Stop any currently playing audio first
-        self.stop_mambo_audio()
+            # Stop any currently playing audio first
+            self.stop_mambo_audio()
 
-        try:
-            system_name = platform.system()
-            print(f"[AUDIO] Playing on {system_name}: {audio_path}")
-
-            if system_name == "Darwin":  # macOS
-                self.audio_process = subprocess.Popen(["afplay", audio_path])
-            elif system_name == "Windows":  # Windows (.NET PresentationCore MediaPlayer)
-                ps_command = (
-                    "Add-Type -AssemblyName PresentationCore; "
-                    f"$mp = New-Object System.Windows.Media.MediaPlayer; "
-                    f"$mp.Open('{audio_path}'); "
-                    "$mp.Play(); "
-                    "Start-Sleep -s 35"
-                )
-                self.audio_process = subprocess.Popen(["powershell", "-NoProfile", "-Command", ps_command])
-            else:  # Linux / Raspberry Pi 5
-                self.audio_process = subprocess.Popen(["mpg123", audio_path])
-
-        except Exception as e:
-            print(f"[AUDIO] Error playing sound: {e}")
-    def stop_mambo_audio(self):
-        """Stops the native audio process immediately when requested via voice."""
-        if self.audio_process and self.audio_process.poll() is None:
-            print("[AUDIO] Stopping music playback.")
             try:
-                self.audio_process.terminate()
-                self.audio_process.wait(timeout=1)
-            except Exception:
-                self.audio_process.kill()
-            self.audio_process = None
+                system_name = platform.system()
+                print(f"[AUDIO] Playing on {system_name}: {audio_path}")
 
+                if system_name == "Darwin":  # macOS
+                    self.audio_process = subprocess.Popen(["afplay", audio_path])
+                elif system_name == "Windows":  # Windows native SoundPlayer (.wav) with PlaySync
+                    safe_path = audio_path.replace("'", "''").replace("\\", "/")
+                    ps_command = f"(New-Object System.Media.SoundPlayer '{safe_path}').PlaySync()"
+                    self.audio_process = subprocess.Popen(["powershell", "-NoProfile", "-Command", ps_command])
+                else:  # Linux / Raspberry Pi 5 (ALSA aplay)
+                    self.audio_process = subprocess.Popen(["aplay", audio_path])
+
+            except Exception as e:
+                print(f"[AUDIO] Error playing sound: {e}")
+
+        def stop_mambo_audio(self):
+            """Stops the native audio process immediately when requested via voice."""
+            if self.audio_process and self.audio_process.poll() is None:
+                print("[AUDIO] Stopping music playback.")
+                try:
+                    self.audio_process.terminate()
+                    self.audio_process.wait(timeout=1)
+                except Exception:
+                    self.audio_process.kill()
+                self.audio_process = None
+
+        def play_wake_audio(self):
+            """Plays the short wake chime (.wav format) instantly with zero latency."""
+            wake_audio_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Audio", "MamboChime.wav")
+
+            if not os.path.exists(wake_audio_path):
+                print(f"[AUDIO] Chime file not found at: {wake_audio_path}")
+                return
+
+            try:
+                system_name = platform.system()
+
+                if system_name == "Darwin":  # macOS
+                    subprocess.Popen(["afplay", wake_audio_path])
+                elif system_name == "Windows":  # Windows native SoundPlayer (.wav) with PlaySync
+                    safe_path = wake_audio_path.replace("'", "''").replace("\\", "/")
+                    ps_command = f"(New-Object System.Media.SoundPlayer '{safe_path}').PlaySync()"
+                    subprocess.Popen(["powershell", "-NoProfile", "-Command", ps_command])
+                else:  # Linux / Raspberry Pi 5 (ALSA aplay)
+                    subprocess.Popen(["aplay", wake_audio_path])
+
+            except Exception as e:
+                print(f"[AUDIO] Wake sound error: {e}")
 if __name__ == "__main__":
     app = MamboScreens()
     app.mainloop()
+
 def main():
     app = MamboScreens()
     app.after(2000, lambda: app.show_screen("Pills"))

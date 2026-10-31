@@ -1,4 +1,3 @@
-
 import queue
 import threading
 import tkinter as tk
@@ -6,10 +5,10 @@ import tkinter as tk
 from voice_listener import SimpleListener
 from Active_Variable import wake
 from Graphics_processing import MamboScreens
+from tts_manager import speak_text
 
 
 def main():
-
     mambo = MamboScreens()
     wake_word = wake()
     command_queue = queue.Queue()
@@ -17,6 +16,9 @@ def main():
     def handle_spoken_text(text):
         print(f"[MAIN RECEIVED]: {text}")
         text = text.lower().strip()
+
+        if text in ["mambo", "hey mambo"]:
+            mambo.play_wake_audio()
 
         if "main" in text or "mambo" in text:
             wake_word.active_timer()
@@ -46,18 +48,19 @@ def main():
             if wake_word.check_active():
                 wake_word.force_stop()
                 command_queue.put("Number5")
+
         elif "stop" in text or "pause" in text:
             if wake_word.check_active():
                 mambo.stop_mambo_audio()
                 mambo.show_screen("Home")
 
+    # Clean lambda wrapper so SimpleListener passes text into our scoped function
     listener = SimpleListener(
         model_path="model",
-        callback=handle_spoken_text
+        callback=lambda text: handle_spoken_text(text)
     )
 
     def process_commands():
-        # Update the UI on-screen listening indicator based on the wake variable
         mambo.set_wake_status(wake_word.check_active())
 
         try:
