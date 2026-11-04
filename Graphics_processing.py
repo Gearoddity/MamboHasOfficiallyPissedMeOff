@@ -24,7 +24,10 @@ class MamboScreens(tk.Tk):
         super().__init__(*args, **kwargs)
 
         self.title("Mambo Smart Assistant")
-        self.geometry("800x480")
+        # --- Full screen configuration ---
+        self.attributes('-fullscreen', True)
+        # Bind Escape key so you can exit full-screen mode easily while debugging on your PC
+        self.bind("<Escape>", lambda event: self.attributes('-fullscreen', False))
         self.minsize(640, 400)
         self.configure(bg=BG)
 
