@@ -22,5 +22,5 @@ else
     exit 1
 fi
 
-echo "=== Launching Mambo Assistant ==="
+echo "== Launching Mambo Assistant =="
 python3 main.py
