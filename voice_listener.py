@@ -1,5 +1,6 @@
 import os
 import json
+import numpy as np
 import sounddevice as sd
 from vosk import Model, KaldiRecognizer
 
@@ -25,15 +26,22 @@ class SimpleListener:
         print("\n--- LISTENING --- (Speak into your mic, press Ctrl+C to exit)")
 
         try:
-            # sounddevice uses a generator/callback or a block-reading input stream context manager.
-            # sd.RawInputStream acts as a direct drop-in replacement for PyAudio's stream reading.
             with sd.RawInputStream(samplerate=48000, blocksize=8000, dtype='int16',
                                    channels=1) as self.stream:
                 while self.is_running:
-                    # stream.read returns (data_bytes, overflow_flag)
+                    # Read raw data (1600 frames at 48kHz)
                     data, overflow = self.stream.read(1600)
-                    data = bytes(data)
-                    if self.recognizer.AcceptWaveform(data):
+
+                    # Convert raw buffer to numpy array of 16-bit integers
+                    audio_data = np.frombuffer(data, dtype=np.int16)
+
+                    # Downsample from 48kHz to 16kHz by taking every 3rd sample (48000 / 16000 = 3)
+                    resampled = audio_data[::3]
+
+                    # Convert back to bytes for Vosk
+                    data_bytes = resampled.tobytes()
+
+                    if self.recognizer.AcceptWaveform(data_bytes):
                         result = json.loads(self.recognizer.Result())
                         text = result.get("text", "").strip()
 
@@ -59,6 +67,3 @@ class SimpleListener:
                 pass
             self.stream = None
         print("Listener stopped.")
-
-
-# --- Your main function remains 100% untouched ---
