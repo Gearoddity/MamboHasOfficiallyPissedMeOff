@@ -113,7 +113,9 @@ def main():
             if wake_word.check_active():
                 mambo.stop_mambo_audio()
                 mambo.show_screen("Home")
-        #else:
+        else:
+            if wake_word.check_active() and "mambo" not in text:
+                speak_text("Sorry, I didn't catch that")
 
     # Clean lambda wrapper so SimpleListener passes text into our scoped function
     listener = SimpleListener(
